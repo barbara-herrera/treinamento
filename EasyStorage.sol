@@ -14,10 +14,8 @@ contract EasyStorage {
   // Struct que representa as informações do aluguel de Storage
   struct Storage {
     address payable storage_owner_address;
-    address payable storage_tenants_adrress;
-    uint storage_price_unit;	// em finney
+    address payable storage_tenant_adrress;
 	uint storage_units;
-	uint storage_total_price;	
 	
   }
 
@@ -67,33 +65,28 @@ contract EasyStorage {
     contract_price_to_add_storage_owner = _contract_price_to_add_storage_owner;
   }
 
-  // Seta o preço de contratar um espaço de armazém
-  function setStoragePrice(uint256 storage_hash, uint _storage_price) public {
-    require(msg.sender == storage_list[storage_hash].storage_owner_address, "Apenas o dono da storage pode alterar o preço dela");
-
-    storage_list[storage_hash].storage_price_unit = _storage_price;
-  }
 
   // Adiciona um aluguel de storage no contrato
-  function addStorageOwner(uint256 storage_hash, uint _storage_price_unit ) public payable {
+  function addStorageOwner(uint256 storage_hash) public payable {
       require(storage_list[storage_hash].storage_owner_address == address(0), "Storage já possui dono");
       require(msg.value == contract_price_to_add_storage_owner, "Preço para adicionar um novo armazem incorreto");
 
       storage_list[storage_hash].storage_owner_address = msg.sender;
-      storage_list[storage_hash].storage_price_unit = _storage_price_unit;
-	  
       
 	  contract_owner_address.transfer(msg.value);
   }
 
   // Aluguel de uma storage unit uma storage
-  function buyStorage(uint256 storage_hash) public payable {
+  function rentStorage(uint256 storage_hash, address payable _storage_owner, uint _storage_units) public payable {
     require(storage_list[storage_hash].storage_owner_address != address(0), "Storage não existe!");
-    require(storage_list[storage_hash].storage_price_unit == msg.value, "Valor de compra da unidade de storage inválido");
+    require(contract_price_to_rent_unit_storage == msg.value, "Valor de compra da unidade de storage inválido");
+    
+    storage_list[storage_hash].storage_owner_address = _storage_owner;
+    storage_list[storage_hash].storage_units = _storage_units;
+    
+    storage_list[storage_hash].storage_owner_address.transfer(msg.value);
 
-    storage_list[storage_hash].storage_owner_address.transfer(storage_list[storage_hash].storage_price_unit);
-
-    storage_list[storage_hash].storage_tenants_adrress = msg.sender;
+    storage_list[storage_hash].storage_tenant_adrress = msg.sender;
   }
 
   function getContractTitle() public view returns (string memory) {
@@ -112,8 +105,8 @@ contract EasyStorage {
     return contract_price_to_add_storage_owner;
   }
 
-  function getStoragePrice(uint256 storage_hash) public view returns (uint) {
-    return storage_list[storage_hash].storage_price_unit;
+  function getPriceToRentStorage() public view returns (uint) {
+    return contract_price_to_rent_unit_storage;
   }
 
   function getStorageOwner(uint256 storage_hash) public view returns (address) {
@@ -121,7 +114,7 @@ contract EasyStorage {
   }
 
   function getStorageHistoric(uint256 storage_hash) public view returns (address) {
-    return storage_list[storage_hash].storage_tenants_adrress;
+    return storage_list[storage_hash].storage_tenant_adrress;
   }
 
   function killContract() public isContractOwner() {
